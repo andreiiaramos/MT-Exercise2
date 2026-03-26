@@ -1,0 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.11.0
+sacremoses==0.1.1
+nltk==3.9.1
+numpy==1.26.4; python_version < "3.13"
+numpy==2.2.2; python_version >= "3.13"
