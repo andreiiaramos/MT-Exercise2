@@ -35,14 +35,31 @@ install_repo() {
     local url=$1
     local dir=$2
     if [ -d "$dir" ]; then
-        echo "Updating $(basename $dir)..."
-        if (cd "$dir" && git rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1); then
-            (cd "$dir" && git pull --ff-only)
+        if [ -d "$dir/.git" ]; then
+            echo "Updating $(basename "$dir")..."
+            if (cd "$dir" && git rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1); then
+                (cd "$dir" && git pull --ff-only)
+            else
+                echo "WARN: No upstream tracking branch for $(basename "$dir"); skipping pull."
+            fi
         else
-            echo "WARN: No upstream tracking branch for $(basename "$dir"); skipping pull."
+            # bootstrap may pre-create nested paths under this directory for dataset output.
+            # If this folder is not a git repo, clone the upstream repo into a backup-safe location.
+            if [ -z "$(find "$dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+                echo "Directory exists but is empty; cloning $(basename "$dir")..."
+                rm -rf "$dir"
+                git clone "$url" "$dir"
+            else
+                backup_dir="${dir}.backup.$(date +%Y%m%d%H%M%S)"
+                echo "WARN: $dir exists but is not a git repository."
+                echo "      Moving it to: $backup_dir"
+                mv "$dir" "$backup_dir"
+                echo "Cloning $(basename "$dir")..."
+                git clone "$url" "$dir"
+            fi
         fi
     else
-        echo "Cloning $(basename $dir)..."
+        echo "Cloning $(basename "$dir")..."
         git clone "$url" "$dir"
     fi
 }

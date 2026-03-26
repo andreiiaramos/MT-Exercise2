@@ -24,8 +24,6 @@ set -euo pipefail
 REPO_ROOT_OVERRIDE=""
 VOCAB_SIZE=5000
 SEED=42
-USE_TFIDF=1
-TFIDF_ALPHA=1.0
 MIN_PYTHON_MAJOR=3
 MIN_PYTHON_MINOR=8
 
@@ -33,8 +31,6 @@ MIN_PYTHON_MINOR=8
 for arg in "$@"; do
   case "${arg}" in
     --repo-root=*) REPO_ROOT_OVERRIDE="${arg#*=}" ;;
-    --no-tfidf) USE_TFIDF=0 ;;
-    --tfidf-alpha=*) TFIDF_ALPHA="${arg#*=}" ;;
   esac
 done
 
@@ -179,7 +175,8 @@ echo ""
 # ---------------------------------------------------------------------------
 DATA_DIR="${REPO_ROOT}/data/rfc"
 RAW_DIR="${DATA_DIR}/raw"
-# PyTorch word_language_model expects data here:
+SPLIT_DIR="${DATA_DIR}/splits"
+# PyTorch word_language_model default data path (mirrored when available)
 TOOLS_DIR="${REPO_ROOT}/tools/pytorch-examples/word_language_model/data/rfc"
 
 CLEANED_FILE="${DATA_DIR}/rfc_cleaned.txt"
@@ -187,7 +184,7 @@ TOKENIZED_FILE="${DATA_DIR}/rfc_tokenized.txt"
 UNK_FILE="${DATA_DIR}/rfc_unk.txt"
 
 mkdir -p "${RAW_DIR}"
-mkdir -p "${TOOLS_DIR}"
+mkdir -p "${SPLIT_DIR}"
 
 # ---------------------------------------------------------------------------
 # STAGE 2 — Download RFCs
@@ -411,66 +408,28 @@ echo ""
 # ---------------------------------------------------------------------------
 # STAGE 5 — Vocabulary limit: replace rare words with <unk>
 # ---------------------------------------------------------------------------
-if [[ "${USE_TFIDF}" -eq 1 ]]; then
-  info "Stage 5/6: Apply TF-IDF vocabulary limit (top ${VOCAB_SIZE}, alpha=${TFIDF_ALPHA}) -> ${UNK_FILE}"
-else
-  info "Stage 5/6: Apply frequency vocabulary limit (top ${VOCAB_SIZE}) -> ${UNK_FILE}"
-fi
+info "Stage 5/6: Apply frequency vocabulary limit (top ${VOCAB_SIZE}) -> ${UNK_FILE}"
 
-python3 - "${TOKENIZED_FILE}" "${UNK_FILE}" "${VOCAB_SIZE}" "${USE_TFIDF}" "${TFIDF_ALPHA}" << 'PYEOF'
+python3 - "${TOKENIZED_FILE}" "${UNK_FILE}" "${VOCAB_SIZE}" << 'PYEOF'
 import sys
-import math
 from collections import Counter
 
 in_path    = sys.argv[1]
 out_path   = sys.argv[2]
 vocab_size = int(sys.argv[3])
-use_tfidf  = int(sys.argv[4])
-tfidf_alpha = float(sys.argv[5])
 
 counter = Counter()
 lines_seen = 0
-documents = []
-current_doc_tokens = []
 
 with open(in_path, 'r', encoding='utf-8') as f:
   for raw_line in f:
     lines_seen += 1
-    tokens = raw_line.split()
-    if tokens:
-      counter.update(tokens)
-      current_doc_tokens.extend(tokens)
-    else:
-      if current_doc_tokens:
-        documents.append(current_doc_tokens)
-        current_doc_tokens = []
+    counter.update(raw_line.split())
 
     if lines_seen % 50000 == 0:
       print(f"  Vocabulary pass progress: {lines_seen} lines", flush=True)
 
-if current_doc_tokens:
-  documents.append(current_doc_tokens)
-
-if use_tfidf:
-  doc_count = max(len(documents), 1)
-  doc_freq = Counter()
-  for doc_tokens in documents:
-    doc_freq.update(set(doc_tokens))
-
-  def score_word(word: str) -> float:
-    tf = counter[word]
-    idf = math.log((doc_count + 1.0) / (doc_freq[word] + 1.0)) + 1.0
-    return tf * (idf ** tfidf_alpha)
-
-  ranked_words = sorted(
-    counter.keys(),
-    key=lambda w: (-score_word(w), -counter[w], w)
-  )
-  print(f"  TF-IDF documents detected : {doc_count}")
-else:
-  ranked_words = [word for word, _ in counter.most_common()]
-
-kept = set(ranked_words[:vocab_size])
+kept = {word for word, _ in counter.most_common(vocab_size)}
 print(f"  Unique tokens in corpus : {len(counter)}")
 print(f"  Kept in vocabulary      : {len(kept)}  (remainder -> <unk>)")
 
@@ -499,9 +458,9 @@ echo ""
 # ---------------------------------------------------------------------------
 # STAGE 6 — Train / valid / test split (80 / 10 / 10)
 # ---------------------------------------------------------------------------
-info "Stage 6/6: Split into train / valid / test -> ${TOOLS_DIR}"
+info "Stage 6/6: Split into train / valid / test -> ${SPLIT_DIR}"
 
-python3 - "${UNK_FILE}" "${TOOLS_DIR}" "${SEED}" << 'PYEOF'
+python3 - "${UNK_FILE}" "${SPLIT_DIR}" "${SEED}" << 'PYEOF'
 import sys
 import os
 import random
@@ -539,18 +498,29 @@ for fname, data in splits.items():
     print(f"  {fname:12s}: {len(data):>6} lines  ->  {path}")
 PYEOF
 
+if [[ -f "${REPO_ROOT}/tools/pytorch-examples/word_language_model/main.py" ]]; then
+  mkdir -p "${TOOLS_DIR}"
+  cp "${SPLIT_DIR}/"*.txt "${TOOLS_DIR}/"
+  info "Mirrored split files to: ${TOOLS_DIR}"
+else
+  warn "pytorch/examples not installed yet; skipped mirroring to ${TOOLS_DIR}."
+  warn "Run ./scripts/install_packages.sh to install it."
+fi
+
 echo ""
 echo "============================================================"
 echo " Dataset summary"
 echo "============================================================"
-wc -l "${TOOLS_DIR}"/*.txt
+wc -l "${SPLIT_DIR}"/*.txt
 echo ""
-info "Data ready at: ${TOOLS_DIR}"
+info "Data ready at: ${SPLIT_DIR}"
+if [[ -d "${TOOLS_DIR}" ]]; then
+  info "PyTorch data mirror: ${TOOLS_DIR}"
+fi
 echo ""
 echo "Next steps:"
 echo "  cd ${REPO_ROOT}"
 echo "  ./scripts/make_virtualenv.sh"
 echo "  source venvs/torch3/bin/activate"
 echo "  ./scripts/install_packages.sh"
-echo "  # Edit scripts/train.sh: change --data path to end with 'rfc'"
 echo "  ./scripts/train.sh"

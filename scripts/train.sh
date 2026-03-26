@@ -7,7 +7,9 @@ base_dir="$(cd "${scripts_dir}/.." && pwd -P)"
 
 models_dir="${base_dir}/models"
 app_path="${base_dir}/tools/pytorch-examples/word_language_model"
-data_path="${TRAIN_DATA_PATH:-${app_path}/data/rfc}"
+default_data_path="${app_path}/data/rfc"
+fallback_data_path="${base_dir}/data/rfc/splits"
+data_path="${TRAIN_DATA_PATH:-${default_data_path}}"
 venv_python="${base_dir}/venvs/torch3/bin/python3"
 
 # --- Added the dropout variable here ---
@@ -32,7 +34,19 @@ mkdir -p "${models_dir}"
 echo "------------------------------------------"
 echo "Checking paths..."
 echo "App Path: ${app_path}"
+
+if [ -z "${TRAIN_DATA_PATH:-}" ] && [ ! -f "${data_path}/train.txt" ] && [ -f "${fallback_data_path}/train.txt" ]; then
+    data_path="${fallback_data_path}"
+fi
+
 echo "Data Path: ${data_path}"
+
+if [ ! -f "${app_path}/main.py" ]; then
+    echo "ERROR: ${app_path}/main.py not found."
+    echo "The pytorch/examples repository was not fully installed."
+    echo "Run: ./scripts/install_packages.sh"
+    exit 1
+fi
 
 if [ ! -f "${data_path}/train.txt" ] || [ ! -f "${data_path}/valid.txt" ] || [ ! -f "${data_path}/test.txt" ]; then
     echo "ERROR: train/valid/test files not found in ${data_path}"
