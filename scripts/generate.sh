@@ -11,7 +11,8 @@ samples_dir="${base_dir}/samples"
 venv_python="${base_dir}/venvs/torch3/bin/python3"
 
 data_path="${TRAIN_DATA_PATH:-${app_path}/data/rfc}"
-checkpoint="${MODEL_CHECKPOINT:-${models_dir}/model.pt}"
+default_dropout="${TRAIN_DROPOUT:-0.5}"
+checkpoint="${MODEL_CHECKPOINT:-${models_dir}/model_dp${default_dropout}.pt}"
 output_file="${SAMPLE_OUTPUT:-${samples_dir}/sample.txt}"
 word_count="${SAMPLE_WORDS:-200}"
 

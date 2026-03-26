@@ -176,7 +176,6 @@ echo ""
 DATA_DIR="${REPO_ROOT}/data/rfc"
 RAW_DIR="${DATA_DIR}/raw"
 SPLIT_DIR="${DATA_DIR}/splits"
-# PyTorch word_language_model default data path (mirrored when available)
 TOOLS_DIR="${REPO_ROOT}/tools/pytorch-examples/word_language_model/data/rfc"
 
 CLEANED_FILE="${DATA_DIR}/rfc_cleaned.txt"
@@ -191,9 +190,7 @@ mkdir -p "${SPLIT_DIR}"
 # ---------------------------------------------------------------------------
 info "Stage 2/6: Download RFCs"
 
-# Curated list: foundational networking protocols
 RFC_LIST=(1)
-# Generate 200 random RFC numbers between 700 and 5000
 if command -v shuf >/dev/null 2>&1; then
   while IFS= read -r rfc_num; do
     RFC_LIST+=("${rfc_num}")
@@ -354,12 +351,6 @@ echo ""
 # ---------------------------------------------------------------------------
 info "Stage 4/6: Tokenise -> ${TOKENIZED_FILE}"
 
-# sacremoses is installed by install_packages.sh into the venv.
-# If this check fails, set up the venv first:
-#   ./scripts/make_virtualenv.sh
-#   source venvs/torch3/bin/activate
-#   ./scripts/install_packages.sh
-# Then re-run this script with the venv active.
 if ! python3 -c "import sacremoses" 2>/dev/null; then
   abort "'sacremoses' Python package not found.
          Activate the virtualenv before running this script:
