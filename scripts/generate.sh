@@ -12,9 +12,34 @@ venv_python="${base_dir}/venvs/torch3/bin/python3"
 
 data_path="${TRAIN_DATA_PATH:-${app_path}/data/rfc}"
 default_dropout="${TRAIN_DROPOUT:-0.5}"
-checkpoint="${MODEL_CHECKPOINT:-${models_dir}/model_dp${default_dropout}.pt}"
+train_seed="${TRAIN_SEED:-42}"
+# CLI-overridable checkpoint; default matches train.sh naming (includes seed)
+checkpoint="${MODEL_CHECKPOINT:-${models_dir}/model_dp${default_dropout}_s${train_seed}.pt}"
 output_file="${SAMPLE_OUTPUT:-${samples_dir}/sample.txt}"
 word_count="${SAMPLE_WORDS:-200}"
+
+
+usage() {
+    cat <<'EOF'
+Usage: ./scripts/generate.sh [options]
+
+Options:
+  --checkpoint PATH    Path to model checkpoint (overrides env MODEL_CHECKPOINT)
+  --words N            Number of words to generate (default 200)
+  --out PATH           Output file for generated text
+  --help               Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --checkpoint) checkpoint="$2"; shift 2 ;;
+        --words) word_count="$2"; shift 2 ;;
+        --out) output_file="$2"; shift 2 ;;
+        --help) usage; exit 0 ;;
+        *) echo "ERROR: Unknown argument: $1"; usage; exit 1 ;;
+    esac
+done
 
 if [ -x "${venv_python}" ]; then
     PYTHON_BIN="${venv_python}"

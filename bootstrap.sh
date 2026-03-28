@@ -497,46 +497,6 @@ mkdir -p "${TOOLS_DIR}"
 cp "${SPLIT_DIR}/"*.txt "${TOOLS_DIR}/" 2>/dev/null || true
 info "Mirrored split files to: ${TOOLS_DIR} (created if missing)"
 
-# Compute checksums and write metadata.json in the splits directory (and mirror it)
-python3 - "${SPLIT_DIR}" "${SEED}" "${VOCAB_SIZE}" "${SPLIT_DIR}/rfc_list.txt" << 'PY'
-import sys, os, json, hashlib
-
-out_dir = sys.argv[1]
-seed = int(sys.argv[2])
-vocab = int(sys.argv[3])
-rfc_list_path = sys.argv[4]
-
-def sha256(path):
-  h = hashlib.sha256()
-  with open(path, 'rb') as f:
-    for chunk in iter(lambda: f.read(8192), b''):
-      h.update(chunk)
-  return h.hexdigest()
-
-meta = {
-  'seed': seed,
-  'vocab_size': vocab,
-  'files': {},
-}
-
-for fname in ('train.txt','valid.txt','test.txt'):
-  p = os.path.join(out_dir, fname)
-  if os.path.exists(p):
-    meta['files'][fname] = sha256(p)
-
-if os.path.exists(rfc_list_path):
-  with open(rfc_list_path, 'r', encoding='utf-8') as f:
-    meta['rfc_list'] = [l.strip() for l in f if l.strip()]
-
-meta_path = os.path.join(out_dir, 'metadata.json')
-with open(meta_path, 'w', encoding='utf-8') as f:
-  json.dump(meta, f, indent=2)
-
-print(f"Wrote metadata: {meta_path}")
-PY
-
-cp "${SPLIT_DIR}/metadata.json" "${TOOLS_DIR}/" 2>/dev/null || true
-
 echo ""
 echo "============================================================"
 echo " Dataset summary"
