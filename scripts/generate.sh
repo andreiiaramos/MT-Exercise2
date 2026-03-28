@@ -41,6 +41,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Resolve relative paths against repository root so they remain valid after `cd ${app_path}`.
+if [[ "${checkpoint}" != /* ]]; then
+    checkpoint="${base_dir}/${checkpoint}"
+fi
+if [[ "${output_file}" != /* ]]; then
+    output_file="${base_dir}/${output_file}"
+fi
+if [[ "${data_path}" != /* ]]; then
+    data_path="${base_dir}/${data_path}"
+fi
+
 if [ -x "${venv_python}" ]; then
     PYTHON_BIN="${venv_python}"
 elif [ -n "${VIRTUAL_ENV:-}" ] && [ -x "${VIRTUAL_ENV}/bin/python3" ]; then
@@ -52,6 +63,7 @@ else
 fi
 
 mkdir -p "${samples_dir}"
+mkdir -p "$(dirname "${output_file}")"
 
 if [ ! -f "${checkpoint}" ]; then
     echo "ERROR: Model checkpoint not found at ${checkpoint}"

@@ -38,7 +38,7 @@ This script wraps the PyTorch `main.py` script and outputs the trained model to 
 ### 3. Text Generation
 Once the model is trained, you can generate a text sample to evaluate its quality:
 ```bash
-./scripts/generate.sh --checkpoint models/model_dp0.5_s42.pt --words 200 --out samples/sample.txt
+./scripts/generate.sh --checkpoint models/model_s42.pt --words 200 --out samples/sample.txt
 ```
 
 ---
