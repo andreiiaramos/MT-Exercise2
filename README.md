@@ -1,7 +1,5 @@
 # MT Exercise 2: RNNs and Language Modelling
 
-This repository contains the setup, data preparation, and training scripts for training a recurrent neural network (RNN) language model using PyTorch, as well as the experimental setup for dropout parameter tuning.
-
 ## Setup Instructions
 
 Ensure you have Python 3.8+ installed, along with `git` and `curl`. 
