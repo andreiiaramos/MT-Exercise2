@@ -21,6 +21,7 @@ embedding_size="${TRAIN_EMSIZE:-200}"
 hidden_size="${TRAIN_NHID:-200}"
 save_path=""
 log_path=""
+IGNORE_CHECKSUM=0
 
 usage() {
     cat <<'EOF'
@@ -37,6 +38,7 @@ Options:
   --device VALUE       CUDA_VISIBLE_DEVICES value (empty for CPU)
   --save PATH          Output model path (default: models/model_dp<dropout>.pt)
   --log PATH           Write full training output to a log file as well
+    --ignore-checksum    Ignore dataset checksum mismatch and continue
   --help               Show this help
 EOF
 }
@@ -53,6 +55,7 @@ while [[ $# -gt 0 ]]; do
         --device) device="$2"; shift 2 ;;
         --save) save_path="$2"; shift 2 ;;
         --log) log_path="$2"; shift 2 ;;
+        --ignore-checksum) IGNORE_CHECKSUM=1; shift 1 ;;
         --help) usage; exit 0 ;;
         *) echo "ERROR: Unknown argument: $1"; usage; exit 1 ;;
     esac
@@ -81,7 +84,7 @@ fi
 echo "Data Path: ${data_path}"
 
 if [ -z "${save_path}" ]; then
-    save_path="${models_dir}/model_dp${dropout}.pt"
+    save_path="${models_dir}/model_dp${dropout}_s${train_seed}.pt"
 fi
 
 if [ -n "${log_path}" ]; then
@@ -99,6 +102,40 @@ if [ ! -f "${data_path}/train.txt" ] || [ ! -f "${data_path}/valid.txt" ] || [ !
     echo "ERROR: train/valid/test files not found in ${data_path}"
     echo "Run: ./bootstrap.sh"
     exit 1
+fi
+
+# If metadata.json exists alongside the data, verify the train split checksum
+if [[ -f "${data_path}/metadata.json" && "${IGNORE_CHECKSUM}" -eq 0 ]]; then
+    echo "Verifying dataset checksum against metadata..."
+    if ! python3 - "${data_path}" << 'PY'
+import sys, json, hashlib, os
+data_dir = sys.argv[1]
+meta_path = os.path.join(data_dir, 'metadata.json')
+with open(meta_path, 'r', encoding='utf-8') as f:
+    meta = json.load(f)
+expected = meta.get('files', {}).get('train.txt')
+if not expected:
+    print('No train.txt checksum found in metadata; skipping check')
+    sys.exit(0)
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            h.update(chunk)
+    return h.hexdigest()
+actual = sha256(os.path.join(data_dir, 'train.txt'))
+if actual != expected:
+    print(f"CHECKSUM_MISMATCH\nexpected: {expected}\nactual:   {actual}")
+    sys.exit(2)
+print('OK')
+PY
+    then
+        echo "Dataset checksum OK."
+    else
+        echo "ERROR: dataset checksum does not match metadata."
+        echo "If you deliberately want to train on this data, re-run with --ignore-checksum or re-run bootstrap.sh to regenerate data." >&2
+        exit 1
+    fi
 fi
 
 echo "Data found! Starting PyTorch..."

@@ -26,11 +26,15 @@ VOCAB_SIZE=5000
 SEED=42
 MIN_PYTHON_MAJOR=3
 MIN_PYTHON_MINOR=8
+FORCE_CLEAN=false
 
 # Parse flags
 for arg in "$@"; do
   case "${arg}" in
     --repo-root=*) REPO_ROOT_OVERRIDE="${arg#*=}" ;;
+    --seed=*) SEED="${arg#*=}" ;;
+    --vocab-size=*) VOCAB_SIZE="${arg#*=}" ;;
+    --force-clean) FORCE_CLEAN=true ;;
   esac
 done
 
@@ -185,37 +189,37 @@ UNK_FILE="${DATA_DIR}/rfc_unk.txt"
 mkdir -p "${RAW_DIR}"
 mkdir -p "${SPLIT_DIR}"
 
+if [[ "${FORCE_CLEAN}" == "true" ]]; then
+  info "Force-clean enabled: removing existing raw RFC files in ${RAW_DIR}"
+  rm -f "${RAW_DIR}/rfc"*.txt || true
+fi
+
 # ---------------------------------------------------------------------------
 # STAGE 2 — Download RFCs
 # ---------------------------------------------------------------------------
 info "Stage 2/6: Download RFCs"
 
-RFC_LIST=(1)
-if command -v shuf >/dev/null 2>&1; then
-  while IFS= read -r rfc_num; do
-    RFC_LIST+=("${rfc_num}")
-  done < <(shuf -i 700-5000 -n 200)
-else
-  while IFS= read -r rfc_num; do
-    RFC_LIST+=("${rfc_num}")
-  done < <(SEED="${SEED}" python3 - <<'PY'
+RFC_LIST=()
+while IFS= read -r rfc_num; do
+  [ -n "${rfc_num}" ] && RFC_LIST+=("${rfc_num}")
+done < <(SEED="${SEED}" python3 - <<'PY'
 import os
 import random
 
 seed = int(os.environ.get("SEED", "42"))
 random.seed(seed)
-nums = random.sample(range(700, 5001), 200)
+nums = sorted(random.sample(range(700, 5001), 200))
 for n in nums:
     print(n)
 PY
-  )
+)
+
+if [[ "${#RFC_LIST[@]}" -eq 0 ]]; then
+  abort "RFC selection failed: generated list is empty."
 fi
 
-rfc_list_sorted="$(printf '%s\n' "${RFC_LIST[@]}" | sort -nu)"
-RFC_LIST=()
-while IFS= read -r rfc_num; do
-  [ -n "${rfc_num}" ] && RFC_LIST+=("${rfc_num}")
-done <<< "${rfc_list_sorted}"
+# Persist RFC list for auditing / metadata
+printf "%s\n" "${RFC_LIST[@]}" > "${SPLIT_DIR}/rfc_list.txt"
 
 info "Fetching up to ${#RFC_LIST[@]} RFCs -> ${RAW_DIR}"
 info "(Already-downloaded files are skipped — safe to re-run)"
@@ -489,14 +493,49 @@ for fname, data in splits.items():
     print(f"  {fname:12s}: {len(data):>6} lines  ->  {path}")
 PYEOF
 
-if [[ -f "${REPO_ROOT}/tools/pytorch-examples/word_language_model/main.py" ]]; then
-  mkdir -p "${TOOLS_DIR}"
-  cp "${SPLIT_DIR}/"*.txt "${TOOLS_DIR}/"
-  info "Mirrored split files to: ${TOOLS_DIR}"
-else
-  warn "pytorch/examples not installed yet; skipped mirroring to ${TOOLS_DIR}."
-  warn "Run ./scripts/install_packages.sh to install it."
-fi
+mkdir -p "${TOOLS_DIR}"
+cp "${SPLIT_DIR}/"*.txt "${TOOLS_DIR}/" 2>/dev/null || true
+info "Mirrored split files to: ${TOOLS_DIR} (created if missing)"
+
+# Compute checksums and write metadata.json in the splits directory (and mirror it)
+python3 - "${SPLIT_DIR}" "${SEED}" "${VOCAB_SIZE}" "${SPLIT_DIR}/rfc_list.txt" << 'PY'
+import sys, os, json, hashlib
+
+out_dir = sys.argv[1]
+seed = int(sys.argv[2])
+vocab = int(sys.argv[3])
+rfc_list_path = sys.argv[4]
+
+def sha256(path):
+  h = hashlib.sha256()
+  with open(path, 'rb') as f:
+    for chunk in iter(lambda: f.read(8192), b''):
+      h.update(chunk)
+  return h.hexdigest()
+
+meta = {
+  'seed': seed,
+  'vocab_size': vocab,
+  'files': {},
+}
+
+for fname in ('train.txt','valid.txt','test.txt'):
+  p = os.path.join(out_dir, fname)
+  if os.path.exists(p):
+    meta['files'][fname] = sha256(p)
+
+if os.path.exists(rfc_list_path):
+  with open(rfc_list_path, 'r', encoding='utf-8') as f:
+    meta['rfc_list'] = [l.strip() for l in f if l.strip()]
+
+meta_path = os.path.join(out_dir, 'metadata.json')
+with open(meta_path, 'w', encoding='utf-8') as f:
+  json.dump(meta, f, indent=2)
+
+print(f"Wrote metadata: {meta_path}")
+PY
+
+cp "${SPLIT_DIR}/metadata.json" "${TOOLS_DIR}/" 2>/dev/null || true
 
 echo ""
 echo "============================================================"
