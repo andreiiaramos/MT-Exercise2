@@ -107,7 +107,7 @@ fi
 # If metadata.json exists alongside the data, verify the train split checksum
 if [[ -f "${data_path}/metadata.json" && "${IGNORE_CHECKSUM}" -eq 0 ]]; then
     echo "Verifying dataset checksum against metadata..."
-    if ! python3 - "${data_path}" << 'PY'
+    if python3 - "${data_path}" << 'PY'
 import sys, json, hashlib, os
 data_dir = sys.argv[1]
 meta_path = os.path.join(data_dir, 'metadata.json')
