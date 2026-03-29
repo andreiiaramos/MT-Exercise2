@@ -21,7 +21,6 @@ embedding_size="${TRAIN_EMSIZE:-200}"
 hidden_size="${TRAIN_NHID:-200}"
 save_path=""
 log_path=""
-IGNORE_CHECKSUM=0
 
 usage() {
     cat <<'EOF'
@@ -37,7 +36,7 @@ Options:
   --threads N          OMP thread count
   --device VALUE       CUDA_VISIBLE_DEVICES value (empty for CPU)
   --save PATH          Output model path (default: models/model_dp<dropout>.pt)
-  --log PATH           Write full training output to a log file as well
+  --log PATH           Write per-epoch CSV log (passed to main.py --export-log)
   --help               Show this help
 EOF
 }
@@ -117,24 +116,21 @@ train_cmd=(
     --seed "${train_seed}"
     --log-interval 100
     --emsize "${embedding_size}" --nhid "${hidden_size}" --dropout "${dropout}" --tied
-        --save "${save_path}"
+    --save "${save_path}"
 )
 
 if [ -n "${log_path}" ]; then
-    (cd "${app_path}" &&
-        CUDA_VISIBLE_DEVICES="${device}" OMP_NUM_THREADS="${num_threads}" "${train_cmd[@]}" \
-        2>&1 | tee "${log_path}"
-    )
-else
-    (cd "${app_path}" &&
-        CUDA_VISIBLE_DEVICES="${device}" OMP_NUM_THREADS="${num_threads}" "${train_cmd[@]}"
-    )
+    train_cmd+=(--export-log "${log_path}")
 fi
+
+(cd "${app_path}" &&
+    CUDA_VISIBLE_DEVICES="${device}" OMP_NUM_THREADS="${num_threads}" "${train_cmd[@]}"
+)
 
 echo "------------------------------------------"
 echo "Training finished."
 echo "Saved model to: ${save_path}"
 if [ -n "${log_path}" ]; then
-    echo "Saved training log to: ${log_path}"
+    echo "Saved CSV log to: ${log_path}"
 fi
 echo "Time taken: ${SECONDS} seconds"

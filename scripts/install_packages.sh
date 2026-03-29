@@ -43,8 +43,6 @@ install_repo() {
                 echo "WARN: No upstream tracking branch for $(basename "$dir"); skipping pull."
             fi
         else
-            # bootstrap may pre-create nested paths under this directory for dataset output.
-            # If this folder is not a git repo, clone the upstream repo into a backup-safe location.
             if [ -z "$(find "$dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
                 echo "Directory exists but is empty; cloning $(basename "$dir")..."
                 rm -rf "$dir"
@@ -66,5 +64,11 @@ install_repo() {
 
 install_repo "https://github.com/bricksdont/moses-scripts" "${tools_dir}/moses-scripts"
 install_repo "https://github.com/pytorch/examples" "${tools_dir}/pytorch-examples"
+
+
+echo "------------------------------------------"
+echo "Applying MT Exercise 2 patch to main.py..."
+"${PYTHON_BIN}" "${scripts_dir}/patch_main.py"
+echo "------------------------------------------"
 
 echo "Installation complete!"
