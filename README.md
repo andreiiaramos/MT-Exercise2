@@ -123,6 +123,8 @@ mkdir -p samples
 ./scripts/generate.sh --checkpoint models/model_dp0.1_s42.pt \
   --words 200 --out samples/sample_best.txt
 ```
+# Best model (lowest test perplexity: dp=0.1)
+
 Sample from sample_best.txt: 
 the value that any matching <eos> this section describes the charset of all which contains the <eos> sessions controls the
 host for the router or , then the &apos; explicit <eos> author &apos;s address <eos> responses <unk> to a host
