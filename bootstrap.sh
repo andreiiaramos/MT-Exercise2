@@ -1,7 +1,6 @@
 #!/bin/bash
 # =============================================================================
 # bootstrap.sh  —  RFC dataset bootstrap for Machine_Learning workspace
-#
 # Run this script from the Machine_Learning workspace root.
 # It will:
 #   0. Verify all required tools are present (preflight checks)
@@ -90,7 +89,7 @@ echo "============================================================"
 echo ""
 info "Stage 0/6: Preflight checks"
 
-# --- git ---
+
 if ! command -v git &>/dev/null; then
   abort "'git' not found. Install git and re-run.
          Ubuntu/Debian : sudo apt install git
@@ -99,7 +98,7 @@ fi
 GIT_VERSION=$(git --version)
 info "  git     : ${GIT_VERSION}"
 
-# --- curl ---
+
 if ! command -v curl &>/dev/null; then
   abort "'curl' not found. Install curl and re-run.
          Ubuntu/Debian : sudo apt install curl
@@ -128,7 +127,6 @@ if [[ "${PY_MAJOR}" -lt "${MIN_PYTHON_MAJOR}" ]] || \
 fi
 info "  python3 : ${PY_VERSION}"
 
-# --- pip (warn only — install_packages.sh handles the venv) ---
 if ! python3 -m pip --version &>/dev/null 2>&1; then
   warn "pip not found. The virtualenv setup step (make_virtualenv.sh) may fail.
         Ubuntu/Debian : sudo apt install python3-pip"
@@ -295,24 +293,24 @@ def is_noise_line(line: str) -> bool:
     stripped = line.strip()
 
     if not stripped:
-        return False   # keep blank lines as paragraph separators
+        return False   
 
     if '\x0c' in line:
-        return True    # form-feed / page break character
+        return True    
 
     if re.search(r'\[Page\s+\d+\]', stripped):
-        return True    # RFC footer: "Author Name    [Page 12]"
+        return True    
 
     if re.fullmatch(r'[-=_.]{5,}', stripped):
-        return True    # separator line
+        return True    
 
     dot_ratio = stripped.count('.') / max(len(stripped), 1)
     if dot_ratio > 0.4 and len(stripped) > 10:
-        return True    # TOC fill line:  "3.1  Overview ........ 7"
+        return True    
 
     alpha = sum(1 for c in stripped if c.isalpha())
     if len(stripped) > 15 and alpha / len(stripped) < 0.35:
-        return True    # ASCII diagram or bit-field drawing
+        return True    
 
     return False
 
@@ -340,7 +338,7 @@ with open(out_path, 'w', encoding='utf-8', errors='replace') as out:
         out.write(line.rstrip() + '\n')
         lines_written += 1
 
-    out.write('\n')   # blank line between RFC documents
+    out.write('\n')
 
     if idx % 25 == 0 or idx == total_files:
       print(f"  Cleaning progress: {idx}/{total_files} files", flush=True)
@@ -513,4 +511,3 @@ echo "  cd ${REPO_ROOT}"
 echo "  ./scripts/make_virtualenv.sh"
 echo "  source venvs/torch3/bin/activate"
 echo "  ./scripts/install_packages.sh"
-echo "  ./scripts/train.sh"
