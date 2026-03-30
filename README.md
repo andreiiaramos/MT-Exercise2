@@ -139,7 +139,7 @@ than all <eos> 1 subnet considerations . <eos> <unk> each cipher @-@ timeout tab
 efficiency might provide to the leave accounting , term , be a restartinprogress first <eos> should so for each contenttype
 for forwarding mail , and mib &apos;s mandatory <eos> return job , the <unk> together under the three corresponding community.
 
-This model's (0.7) sample is less coherent and slightly repetitive. Indeed, it contains weaker local structure and less meaningful sequences, which matches its higher perplexity, compared to dropout 0.1. 
+- This model's (0.7) sample is less coherent and slightly repetitive. Indeed, it contains weaker local structure and less meaningful sequences, which matches its higher perplexity, compared to dropout 0.1. 
 ---
 
 ## Documented Modifications
