@@ -134,6 +134,7 @@ This model's sample is more coherent, because it has more plausible word sequenc
 
 ```bash
 mkdir -p samples
+# Worst model (highest test perplexity: dp=0.7)
 ./scripts/generate.sh --checkpoint models/model_dp0.7_s42.pt \
   --words 200 --out samples/sample_worst.txt
 ````
