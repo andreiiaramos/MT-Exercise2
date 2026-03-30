@@ -101,6 +101,8 @@ Each run produces a CSV at `logs/log_dp<value>.csv` with columns `epoch`, `train
 ### Plotting Results
 
 Generate perplexity tables (printed to stdout) and line charts:
+From the generated plots and tables of the six different dropout settings, we have observed that training perplexity decreases more strongly for low dropout values, which means those models fit the training data better. 
+Meanwhile, validation perplexity shows that a small amount of dropour improves generalization, while significantly high dropout damages performance. Test perplexity follows the same trend as validation perplexity, meaning it is a good indicator of generalization.
 
 ```bash
 mkdir -p plots
@@ -120,12 +122,24 @@ mkdir -p samples
 # Best model (lowest test perplexity: dp=0.1)
 ./scripts/generate.sh --checkpoint models/model_dp0.1_s42.pt \
   --words 200 --out samples/sample_best.txt
+```
+Sample from sample_best.txt: 
+the value that any matching <eos> this section describes the charset of all which contains the <eos> sessions controls the
+host for the router or , then the &apos; explicit <eos> author &apos;s address <eos> responses <unk> to a host
+on the lan endpoint .
+
+This model's sample is more coherent, because it has more plausible word sequences and better local structure. The dropout setting 0.1 resembles the training data in style, since it uses technical vocabulary and some sentence fragments according to the RFC-style text.
 
 # Worst model (highest test perplexity: dp=0.7)
 ./scripts/generate.sh --checkpoint models/model_dp0.7_s42.pt \
   --words 200 --out samples/sample_worst.txt
 ```
+Sample from sample_worst.txt: 
+than all <eos> 1 subnet considerations . <eos> <unk> each cipher @-@ timeout table and rfc <unk> is <eos> of
+efficiency might provide to the leave accounting , term , be a restartinprogress first <eos> should so for each contenttype
+for forwarding mail , and mib &apos;s mandatory <eos> return job , the <unk> together under the three corresponding community.
 
+This model's (0.7) sample is less coherent and slightly repetitive. Indeed, it contains weaker local structure and less meaningful sequences, which matches its higher perplexity, compared to dropout 0.1. 
 ---
 
 ## Documented Modifications
