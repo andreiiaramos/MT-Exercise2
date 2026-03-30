@@ -133,7 +133,7 @@ This model's sample is more coherent, because it has more plausible word sequenc
 # Worst model (highest test perplexity: dp=0.7)
 ./scripts/generate.sh --checkpoint models/model_dp0.7_s42.pt \
   --words 200 --out samples/sample_worst.txt
-```
+
 Sample from sample_worst.txt: 
 than all <eos> 1 subnet considerations . <eos> <unk> each cipher @-@ timeout table and rfc <unk> is <eos> of
 efficiency might provide to the leave accounting , term , be a restartinprogress first <eos> should so for each contenttype
