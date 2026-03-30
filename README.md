@@ -1,9 +1,5 @@
 # MT Exercise 2: RNNs and Language Modelling
 
-This repository is a fork of [marcamsler1/mt-exercise-02](https://github.com/marcamsler1/mt-exercise-02).
-
----
-
 ## Setup
 
 Ensure Python 3.8+, `git`, and `curl` are available on your system.
@@ -133,7 +129,7 @@ mkdir -p samples
 
 The following changes were made relative to the base repository at [https://github.com/marcamsler1/mt-exercise-02](https://github.com/marcamsler1/mt-exercise-02):
 
-- **Deleted `scripts/download_data.sh`:** Removed the original Brothers Grimm / Project Gutenberg dataset script.
+- **Deleted `scripts/download_data.sh` and preprocessing scripts:** Removed the original Brothers Grimm / Project Gutenberg dataset script and the base preprocessing scripts.
 - **Added `bootstrap.sh`:** New root-level script that downloads, cleans, tokenizes, applies a vocabulary cutoff, and splits RFC documents into the train/valid/test corpus used for all training in this exercise.
 - **Modified `scripts/install_packages.sh`:** Added a call to `scripts/patch_main.py` at the end of the installation step so that `main.py` is automatically patched after cloning the PyTorch examples repository.
 - **Added `scripts/patch_main.py`:** Python script that applies all required modifications to `tools/pytorch-examples/word_language_model/main.py`. Idempotent — safe to re-run. Adds the `--export-log` argparse argument, CSV file I/O logic for per-epoch logging, and an epoch-level loss accumulator so `train()` returns the mean epoch loss.
