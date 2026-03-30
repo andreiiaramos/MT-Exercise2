@@ -132,9 +132,12 @@ on the lan endpoint .
 
 This model's sample is more coherent, because it has more plausible word sequences and better local structure. The dropout setting 0.1 resembles the training data in style, since it uses technical vocabulary and some sentence fragments according to the RFC-style text.
 
-# Worst model (highest test perplexity: dp=0.7)
+```bash
+mkdir -p samples
 ./scripts/generate.sh --checkpoint models/model_dp0.7_s42.pt \
   --words 200 --out samples/sample_worst.txt
+````
+# Worst model (highest test perplexity: dp=0.7)
 
 Sample from sample_worst.txt: 
 than all <eos> 1 subnet considerations . <eos> <unk> each cipher @-@ timeout table and rfc <unk> is <eos> of
