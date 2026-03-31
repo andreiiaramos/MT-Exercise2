@@ -21,17 +21,6 @@ source venvs/torch3/bin/activate
 
 ## Part 1: Training a Language Model on RFCs
 
-### Dataset
-
-The model is trained on a custom corpus of Request for Comments (RFC) documents sourced from [rfc-editor.org](https://www.rfc-editor.org). RFCs are the technical specification documents that define Internet standards, covering protocols such as TCP, IP, HTTP, and DNS.
-
-**Dataset attributes and their expected influence on text generation:**
-
-- **Highly technical, domain-specific vocabulary.** RFCs use precise protocol terminology (*datagram*, *octet*, *acknowledgement*, *encapsulation*). With a vocabulary cutoff of 5000 words, many rare technical terms are collapsed to `<unk>`, limiting the model's ability to reproduce accurate protocol-level detail.
-- **Formal, structured prose.** RFCs follow a rigid document structure: numbered sections, defined terminology blocks, and normative language (MUST, SHOULD, MAY per RFC 2119). The model may partially learn this register and produce output that superficially resembles standards prose.
-- **Repetitive syntactic patterns.** RFC text reuses sentence templates heavily (*"The sender MUST... The receiver SHOULD..."*). This regularity makes the corpus relatively learnable for an LSTM, and generated text is likely to echo these patterns even if the semantics are incoherent.
-- **No narrative structure.** Unlike fiction or news, RFCs have no story arc or temporal progression. The model will not learn narrative coherence — output consists of locally plausible token sequences that do not build toward any larger meaning.
-
 ### Data Preparation
 
 To download and preprocess the RFC corpus, run:
@@ -59,10 +48,6 @@ Generate a 200-word sample from the trained model:
 ```bash
 ./scripts/generate.sh --checkpoint models/model_dp0.5_s42.pt --words 200 --out samples/sample.txt
 ```
-
-**Impressions of the generated sample:**
-
-The output from the dp=0.5 model (valid ppl 43.74 at epoch 40) reads as plausible RFC-style fragments at the token level. Recognizable structures appear — RFC reference numbers, section citations, normative syntax remnants, and protocol identifiers such as `ipv4`, `base64`, and `sip / 2.0`. The text is not semantically coherent across sentence boundaries, as expected from a model with no understanding of protocol logic. The vocabulary cutoff is visible: `<unk>` appears frequently in positions where rare technical terms would be. The `<eos>` markers reflect the line-by-line structure of the training data. Overall the model has learned the surface register of RFC prose without any of the underlying meaning.
 
 ---
 
